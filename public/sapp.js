@@ -9,10 +9,10 @@ async function requestData() {
 	const power = data.power
 	const point = [new Date(date).getTime(), power]
 	const series = chart.series[0],
-	    shift = series.data.length > 20;
+	    shift = series.data.length > 100;
 
 	chart.series[0].addPoint(point, true, shift);
-	setTimeout(requestData, 5000);
+	setTimeout(requestData, 1000);
 	document.getElementById("power").innerHTML = data.power.toFixed(0)
     }
 }

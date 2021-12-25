@@ -31,7 +31,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if s.path.endswith(".ico") :
             mimetype = 'image/png'
             isStatic = True
-        print isStatic, s.path
+        #print isStatic, s.path
         if isStatic :
             # print(s.path)
             try:
