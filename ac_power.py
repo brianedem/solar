@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 import serial
 import glob
 import struct
@@ -15,7 +17,7 @@ if len(serialPorts)>1 :
 
 ac_port = serial.Serial(serialPorts[0], baudrate=9600, timeout=1)
 
-out_file = open("solar.csv", 'w')
+out_file = open("solar.csv", 'wa')
 out_file.write("time, voltage, current, power, energy, frequency, pwr_fctr\n")
 
 def crc16(data) :
@@ -46,6 +48,7 @@ parser.add_option("-r", "--raw", action="store_true", dest="raw", default=False)
 (options, leftover) = parser.parse_args()
 
 peak = 0.0
+scale = 50
 while True :
     ac_port.write(request)
 
@@ -77,6 +80,8 @@ while True :
                         size = 5
                     else :
                         size = int((log10(power)-1.7)*50)
+                        if size > 100 :
+                            scale = size/(log10(power)-1.7)
                     bar = '#'*(size) + ' '*(100-size)
                     if size > peak :
                         peak = size
@@ -88,7 +93,9 @@ while True :
                     sys.stdout.flush()
                      
                 if options.log :
-                    out_file.write(time.asctime()+",%f,%f,%f,%f,%f,%f\n" %
+                        # ISO time format with UTC offset
+                    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S+00:00",time.gmtime())
+                    out_file.write(timestamp+",%f,%f,%f,%f,%f,%f\n" %
                             (voltage, current, power, energy, frequency,pwr_fctr))
                     out_file.flush()
 
