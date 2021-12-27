@@ -6,6 +6,7 @@ import struct
 import time
 import sys
 from math import log10
+from math import fmod
 
 serialPorts = glob.glob('/dev/ttyUSB*')
 
@@ -17,8 +18,7 @@ if len(serialPorts)>1 :
 
 ac_port = serial.Serial(serialPorts[0], baudrate=9600, timeout=1)
 
-out_file = open("solar.csv", 'wa')
-out_file.write("time, voltage, current, power, energy, frequency, pwr_fctr\n")
+out_file = open("solar.csv", 'a+', 1)   # line  buffering
 
 def crc16(data) :
     crc = 0xFFFF
@@ -94,10 +94,11 @@ while True :
                      
                 if options.log :
                         # ISO time format with UTC offset
-                    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S+00:00",time.gmtime())
-                    out_file.write(timestamp+",%f,%f,%f,%f,%f,%f\n" %
+                    ctime = time.time()
+                    fseconds = int(fmod(ctime,1)*10)
+                    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S",time.gmtime(ctime))+".%dZ"%fseconds
+                    out_file.write(timestamp+",%.1f,%.3f,%.1f,%d,%.1f,%.2f\n" %
                             (voltage, current, power, energy, frequency,pwr_fctr))
-                    out_file.flush()
 
                 time.sleep(0.5)
 
