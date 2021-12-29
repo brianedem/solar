@@ -3,14 +3,27 @@
         <title>Python Solar</title>
         <meta content="10" charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Iceland&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" type="text/css" href="theme.css">
 
         <script src="https://code.highcharts.com/highcharts.js"></script>
 	<script src="sapp.js"></script>
 
+        <style type="text/css">
+        .custom {
+             font-family: 'Iceland';
+             color: red;
+             font-size:60px;
+        }
+</style>
+
     </head>
 	<body>
 	    <div id="solar_data"></dev>
-		<p>Power = <span id="power"></span>
+		<p><span class=custom id="power"></span> watts
 	</body>
 	<div id="container" style="width:100%; height:400px;"></div>
 	<script>
