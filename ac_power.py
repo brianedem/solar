@@ -6,7 +6,7 @@ import struct
 import time
 import sys
 from math import log10
-from math import fmod
+from math import modf
 
 serialPorts = glob.glob('/dev/ttyUSB*')
 
@@ -95,8 +95,8 @@ while True :
                 if options.log :
                         # ISO time format with UTC offset
                     ctime = time.time()
-                    fseconds = int(fmod(ctime,1)*10)
-                    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S",time.gmtime(ctime))+".%dZ"%fseconds
+                    fseconds,iseconds = modf(ctime)
+                    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S",time.gmtime(ctime))+".%dZ"%int(fseconds*10)
                     out_file.write(timestamp+",%.1f,%.3f,%.1f,%d,%.1f,%.2f\n" %
                             (voltage, current, power, energy, frequency,pwr_fctr))
 
