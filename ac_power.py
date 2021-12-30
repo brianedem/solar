@@ -75,23 +75,7 @@ while True :
                     print "frequency = ", frequency 
                     print "pwr_fctr = ", pwr_fctr 
                     print
-                if options.meter :
-                    if power < 63 :
-                        size = 5
-                    else :
-                        size = int((log10(power)-1.7)*50)
-                        if size > 100 :
-                            scale = size/(log10(power)-1.7)
-                    bar = '#'*(size) + ' '*(100-size)
-                    if size > peak :
-                        peak = size
-                    else :
-                        peak *= 0.99
-                    if bar[int(peak)] != '#' :
-                        bar = bar[:int(peak)] + '|' + bar[int(peak)+1:]
-                    print '%5d '%power + bar[5:] + '\r',
-                    sys.stdout.flush()
-                     
+
                 if options.log :
                         # ISO time format with UTC offset
                     ctime = time.time()
@@ -99,6 +83,33 @@ while True :
                     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S",time.gmtime(ctime))+".%dZ"%int(fseconds*10)
                     out_file.write(timestamp+",%.1f,%.3f,%.1f,%d,%.1f,%.2f\n" %
                             (voltage, current, power, energy, frequency,pwr_fctr))
+
+                if options.meter :
+                        # minimum size is 5 to provide room for value text
+                    if power < 63 :
+                        size = 5
+                    else :
+                            # log scale bar, 50-5000W. Difference in logs is 2
+                            # log10(50) is ~1.7
+                        size = int((log10(power)-1.7)*50)
+                        if size > 100 :
+                            scale = 100
+
+                        # create the bar graph
+                    bar = '#'*(size) + ' '*(100-size)
+
+                    if size > peak :
+                            # set new peak
+                        peak = size
+                    else :
+                            # or age
+                        peak *= 0.99
+
+                        # string is indexed by 0..99
+                    if bar[int(peak)-1] != '#' :
+                        bar = bar[:int(peak)-1] + '|' + bar[int(peak):]
+                    print '%5d '%power + bar[5:] + '\r',
+                    sys.stdout.flush()
 
                 time.sleep(0.5)
 
