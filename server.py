@@ -2,8 +2,10 @@
 
 import os
 import time
+import datetime
 import BaseHTTPServer
 import json
+import thread
 
 HOST_NAME = os.uname() [1]
 PORT_NUMBER = 8080
@@ -54,6 +56,10 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             dfile.seek(fsize-1000)
             data = dfile.readlines()
             fields = data[-1].split(',')
+            if len(fields)>7 :
+                battery = float(fields[7])
+            else :
+                battern = 0.0
             s.send_response(200)
             s.send_header("Content-type", "application/json")
             s.end_headers()
@@ -64,13 +70,106 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 "power":    float(fields[3]),
                 "energy":   float(fields[4]),
                 "freq":     float(fields[5]),
-                "pf":       float(fields[6])
+                "pf":       float(fields[6]),
+                "bat":      battery
                 })
             s.wfile.write(json_string)
             return
+        if s.path == '/solar.data2' :
+            s.send_response(200)
+            s.send_header("Content-type", "application/json")
+            s.end_headers()
+            json_string = json.dumps({
+                "power":    power_now,
+                "start":    start_iso,
+                "min":      minpoints,
+                "max":      maxpoints,
+                "avg":      avgpoints,
+#               "history":  powerpoints
+                })
+            s.wfile.write(json_string)
+            return
+
         s.send_error(404, 'File Not Found: %s' % s.path)
 
+powerpoints = []
+minpoints = []
+maxpoints = []
+avgpoints = []
+power_now = 0
+start_iso = ''
+
+def filter_power(args) :
+    global power_now, start_iso
+        # open the log file, determine its size
+    log_file = "solar.csv"
+    pf = open(log_file, 'r')
+    log_size = os.stat(log_file).st_size
+
+        # determine the UCI time in ISO format 24 hours ago
+    now = time.time()
+    start = datetime.datetime.utcfromtimestamp(int(now - 24*60*60))
+    start -= datetime.timedelta(seconds=start.second) # zero out seconds
+    start_iso = start.isoformat() + 'Z'   # convert to string for comparison
+
+        # position the file to slightly more than 24 hours ago
+    f_offset = 24*60*60*2*(56+6)    # 9000000
+    if log_size < f_offset :
+        f_offset = log_size
+    pf.seek(-f_offset, os.SEEK_END)
+
+        # first line read will most likely not start correctly - discard
+    line = pf.readline()
+    line = pf.readline()
+        # there should be a check here to see that we have backed up enough
+
+        # search forward to find an entry that occurs after the starting timestamp
+    while line[:19] < start_iso[:19] :
+        line = pf.readline()
+
+        # this will parse lines into one minute intervals and add the min/max/avg to an array
+    end = start
+    timedelta60 = datetime.timedelta(seconds=60)
+    while True:
+            # advance the endpoint by 60 seconds
+        end += timedelta60
+            # convert to ISO format
+        stop_iso = end.isoformat()
+        points = []
+            # collect up entries in the 60 second interval
+        while line[:19] < stop_iso[:19] :
+            power_now = float(line.split(',')[3])
+            points.append(power_now)
+                # if at the end of the file we need to wait for more data to be appended
+            while True :
+                line = pf.readline()
+                if len(line)>0 : break
+                time.sleep(1)
+        if len(points)==0 :
+                # if the logger is stopped for awhile there may not be any data to log
+            entry = (0,0,0) # None
+        elif len(points)==1 :
+                # or at the edge only one log entry
+            entry = (points[0][0], points[0][1], points[0][2])
+        else :
+                # otherwise we process to fine the min/max/avg
+            entry = (min(points),max(points),int(sum(points)/len(points)))
+
+        powerpoints.append(entry)
+        minpoints.append((stop_iso,entry[0]))
+        maxpoints.append(entry[1])
+        avgpoints.append(entry[2])
+        if len(powerpoints) > (24*60) :
+                # array has reached its max size, trim oldest data
+            powerpoints.pop(0)
+            minpoints.pop(0)
+            maxpoints.pop(0)
+            avgpoints.pop(0)
+            start += timedelta60
+            start_iso = start.isoformat() + 'Z'
+
 if __name__ == '__main__':
+    thread.start_new_thread(filter_power,(None,))
     server_class = BaseHTTPServer.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
     print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)

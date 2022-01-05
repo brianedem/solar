@@ -54,13 +54,64 @@
                   }
                 },
                 series: [{
-                  name: 'Power',
+                  name: 'Inverter',
+                  data: []
+                },{
+                  name: 'Battery',
                   data: []
                 }]
 	    });
 	});
         //console.log("body script end");
-        // requestData();
+	</script>
+	<div id="container2" style="width:100%; height:400px;"></div>
+	<script>
+        //console.log("body script start");
+	document.addEventListener('DOMContentLoaded', function () {
+	    chart2 = new Highcharts.Chart({
+		chart: {
+		    renderTo: 'container2',
+		    defaultSeriesType: 'spline',
+		    events: {
+			load: requestData2
+		    }
+		},
+		title: {
+		    text: 'Solar Production'
+		},
+/*              xAxis: {
+                  //type: 'datetime'
+                  tickPixelInterval: 150,
+                  maxZoom: 20 * 1000
+                },
+*/
+                yAxis: {
+                  minPadding: 0.2,
+                  maxPadding: 0.2,
+                  title: {
+                    text: 'Watts',
+                    margin: 80
+                  }
+                },
+                plotOptions: {
+                    series: {
+                        pointStart: Date.UTC(2022,0,1),
+                        pointIntervalUnit: 'minute'
+                    }
+                },
+                series: [{
+                  name: 'Min',
+                  data: []
+                },{
+                  name: 'Max',
+                  data: []
+                },{
+                  name: 'Avg',
+                  data: []
+                }]
+	    });
+	});
+        //console.log("body script end");
 	</script>
 
     </body>
