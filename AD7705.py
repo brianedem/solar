@@ -1,11 +1,8 @@
 # solar_adc.py
 
-# This library provides access to either the AD7705 or ADS1256.
+# This library provides access to either the AD7705
 # The AD7705 can use the standard Python spidev library as the device chip selects
-# are wired to the pins 24 and 26 of the head, per PCI standard
-# The ADS1256 has its CS connected to pin 15 while the DAC8532's is connected to pin 16
-# The ADS1256 also requres a ~8us pause in the serial clock after the command before
-# clocking out the data
+# are wired to the pins 24 and 26 of the head, per RPi standard
 
 import time
 import spidev
