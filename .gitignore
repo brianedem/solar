@@ -1,4 +1,5 @@
 solar.csv
 *~
 .*.swp
+*.pyc
 .DS_Store
