@@ -66,7 +66,7 @@ DP15    = 0x33
 DP25    = 0x43
 DP30    = 0x53
 DP50    = 0x63
-DP60    = 0x73
+DP60    = 0x72
 DP100   = 0x82
 DP500   = 0x92
 DP1000  = 0xA0
@@ -138,16 +138,23 @@ class adc :
 
             # release ADC pin reset
         GPIO.output(PIN_RESET, GPIO.HIGH)
-        time.sleep(0.01)
+#       time.sleep(0.01)
 
             # initial configuration of ADC
-        self.cmd(WAKEUP)
-        self.cmd(RESET)
-        self.write_reg(REG["STATUS"], ACAL_EN | BUFEN)
-        self.write_reg(REG["STATUS"], ACAL_EN | BUFEN)
-        self.write_reg(REG["DRATE"], DP60)    # sampling rate
+#       self.cmd(WAKEUP)
+#       self.cmd(RESET)
 
-            # defaut ADC setup - changing this requires SELFCAL
+            # registers initially don't work - wait until status is non-zero
+        while self.read_reg(REG["STATUS"]) == 0 :
+            pass
+
+        self.write_reg(REG["DRATE"], DP1000)    # sampling rate
+        self.write_reg(REG["STATUS"], BUFEN)
+#       self.write_reg(REG["STATUS"], ACAL_EN | BUFEN)
+        self.cmd(SELFCAL)   # autocalibration complicates configuration changes
+        self.wait_drdy()
+
+            # defaut ADC setup - changing these values require recalibration
         self.buf_en = 0
         self.gain = PGA1
         self.channel = PSEL0 | NSEL1
@@ -155,7 +162,12 @@ class adc :
             # channel_map: (buf_en, gain)
         self.channel_config = {}
 
+    def wait_drdy(self) :
+        while GPIO.input(PIN_DRDY) :
+            pass
+
     def cmd(self, command) :
+
         msg = [command,]
         GPIO.output(PIN_CS, GPIO.LOW)
         #print "write", msg
@@ -186,6 +198,7 @@ class adc :
 
     def read_data(self, channel, gain=None, unipolar=None, buf_en=None) :
             # if channel has not be used yet set up a default configuration
+        self.cmd(SYNC)
         if channel not in self.channel_config :
             if gain is None :
                 gain = PGA1
@@ -208,22 +221,32 @@ class adc :
             self.channel_config[channel][1] = gain
 
             # update hardware is configuration has changed
-        need_sync = 0
+        need_cal = 0
         if channel != self.channel :
             self.write_reg(REG["MUX"], channel)
 
                 # generate a SYNC to restart conversion
-            GPIO.output(PIN_SYNCN, GPIO.LOW)
+            #GPIO.output(PIN_SYNCN, GPIO.LOW)
+            #print "generating sync", hex(channel)
+            #self.cmd(SYNC)
+            #self.cmd(WAKEUP)
         if buf_en != self.buf_en :
             self.write_reg(REG["STATUS"], ACAL_EN | buf_en)
             self.buf_en = buf_en
+            need_cal = 1
         if gain != self.gain :
             self.write_reg(REG["ADCON"], gain)
             self.gain = gain
+            need_cal = 1
 
             # if MUX changed release SYNC to start conversion
             # other configuration changes will cause internal SYNC generation
-        GPIO.output(PIN_SYNCN, GPIO.HIGH)
+        #GPIO.output(PIN_SYNCN, GPIO.HIGH)
+        if need_cal :
+#           #print "calibrating"
+            self.cmd(SELFCAL)
+        else :
+            self.cmd(WAKEUP)
 
             # wait for data ready
         while GPIO.input(PIN_DRDY) :

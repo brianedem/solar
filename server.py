@@ -18,26 +18,31 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.end_headers()
 
     def do_GET(s) :
-        if s.path == '/':
-            s.path = '/index.html'
+        (path,sep,opt) = s.path.partition('?')
+        options = {}
+        for o in opt.split('&') :
+            pass    # FIXME
+
+        if path == '/':
+            path = '/index.html'
         isStatic = False
-        if s.path.endswith(".html") :
+        if path.endswith(".html") :
             mimetype = 'text/html'
             isStatic = True
-        if s.path.endswith(".js") :
+        if path.endswith(".js") :
             mimetype = 'application/javascript'
             isStatic = True
-        if s.path.endswith(".css") :
+        if path.endswith(".css") :
             mimetype = 'text/css'
             isStatic = True
-        if s.path.endswith(".ico") :
+        if path.endswith(".ico") :
             mimetype = 'image/png'
             isStatic = True
-        #print isStatic, s.path
+        #print isStatic, path
         if isStatic :
-            # print(s.path)
+            # print(path)
             try:
-                filename = os.curdir + '/public' + s.path
+                filename = os.curdir + '/public' + path
                 # print filename
                 f = open(filename)
                 s.send_response(200)
@@ -46,36 +51,33 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 s.wfile.write(f.read())
                 f.close()
             except IOError:
-                s.send_error(404, 'File Not Found: %s' % s.path)
+                s.send_error(404, 'File Not Found: %s' % path)
             return
 
-        if s.path == '/solar.data' :
+        if path == '/solar.data' :
             fname = "solar.csv"
             fsize = os.stat(fname).st_size
             dfile = open(fname)
             dfile.seek(fsize-1000)
             data = dfile.readlines()
             fields = data[-1].split(',')
-            if len(fields)>7 :
-                battery = float(fields[7])
-            else :
-                battern = 0.0
             s.send_response(200)
             s.send_header("Content-type", "application/json")
             s.end_headers()
             json_string = json.dumps({
-                "date":     fields[0],
-                "voltage":  float(fields[1]),
-                "current":  float(fields[2]),
-                "power":    float(fields[3]),
-                "energy":   float(fields[4]),
-                "freq":     float(fields[5]),
-                "pf":       float(fields[6]),
-                "bat":      battery
+                "date":         fields[0],
+                "voltage":      float(fields[1]),
+                "current":      float(fields[2]),
+                "power":        float(fields[3]),
+                "pf":           float(fields[4]),
+                "bus_v":        float(fields[5]),
+                "solar_i":      float(fields[6]),
+                "discharge_i":  float(fields[8]),
+                "charge_i":     float(fields[7]),
                 })
             s.wfile.write(json_string)
             return
-        if s.path == '/solar.data2' :
+        if path == '/solar.data2' :
             s.send_response(200)
             s.send_header("Content-type", "application/json")
             s.end_headers()
@@ -90,7 +92,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             s.wfile.write(json_string)
             return
 
-        s.send_error(404, 'File Not Found: %s' % s.path)
+        s.send_error(404, 'File Not Found: %s' % path)
 
 powerpoints = []
 minpoints = []

@@ -30,13 +30,20 @@ parser.add_option("-l", "--log", action="store_true", dest="log", default=False)
 parser.add_option("-r", "--raw", action="store_true", dest="raw", default=False)
 (options, leftover) = parser.parse_args()
 
-bus_voltage = 400
-
 meter_peak = 0.0
 while True :
+    bus_voltage = dc_monitor.vbus()
+
     battery_current = dc_monitor.ibattery()
-    battery_power = battery_current * bus_voltage
-    print battery_current
+    #print battery_current
+    if battery_current < 0 :
+        battery_discharge = -battery_current
+        battery_charge = 0.0
+    else :
+        battery_discharge = 0.0
+        battery_charge = battery_current
+
+    solar_current = dc_monitor.isolar()
 
     if ac_meter.read_meter() :
 
@@ -47,11 +54,11 @@ while True :
             print "voltage = ", ac_meter.voltage
             print "current = ", ac_meter.current 
             print "power = ", ac_meter.power 
-            print "energy = ", ac_meter.energy 
-            print "frequency = ", ac_meter.frequency 
             print "pwr_fctr = ", ac_meter.pwr_fctr 
-            print "battery = ", battery_power
-            print "solar = ", ac_meter.power + battery_power
+            print "bus voltage = ", bus_voltage
+            print "solar_current = ", solar_current
+            print "bat_charge = ", battery_charge
+            print "bat_discharge = ", battery_discharge
             print
 
         if options.log :
@@ -59,14 +66,16 @@ while True :
             ctime = time.time()
             fseconds,iseconds = modf(ctime)
             timestamp = time.strftime("%Y-%m-%dT%H:%M:%S",time.gmtime(ctime))+".%dZ"%int(fseconds*10)
-            out_file.write(timestamp+",%.1f,%.3f,%.1f,%d,%.1f,%.2f,%d\n" % (
+            out_file.write(timestamp+",%.1f,%.3f,%.1f,%.2f,%d,%.1f,%.1f,%.1f\n" % (
                 ac_meter.voltage,
                 ac_meter.current,
                 ac_meter.power,
-                ac_meter.energy,
-                ac_meter.frequency,
                 ac_meter.pwr_fctr,
-                battery_power))
+                bus_voltage,
+                solar_current,
+                battery_discharge,
+                battery_charge,
+                ))
 
         if options.meter :
                 # minimum size is 5 to provide room for value text

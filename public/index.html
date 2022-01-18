@@ -23,7 +23,7 @@
     </head>
 	<body>
 	    <div id="solar_data"></dev>
-		<p><span class=custom id="power"></span> watts
+		<p><span class=custom id="power"></span> watts (inverter)
 	</body>
 	<div id="container" style="width:100%; height:400px;"></div>
 	<script>
@@ -57,7 +57,13 @@
                   name: 'Inverter',
                   data: []
                 },{
-                  name: 'Battery',
+                  name: 'Solar',
+                  data: []
+                },{
+                  name: 'Charge',
+                  data: []
+                },{
+                  name: 'Discharge',
                   data: []
                 }]
 	    });
