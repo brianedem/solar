@@ -170,7 +170,7 @@ class adc :
 
         msg = [command,]
         GPIO.output(PIN_CS, GPIO.LOW)
-        #print "write", msg
+        #print ("write", msg)
         self.adc.xfer(msg)
         GPIO.output(PIN_CS, GPIO.HIGH)
 
@@ -179,7 +179,7 @@ class adc :
         for i in range((reg_size[reg]-1)*8, -8, -8) :
             msg.append((value>>i) & 0xFF)
         GPIO.output(PIN_CS, GPIO.LOW)
-        #print "write", msg
+        #print ("write", msg)
         self.adc.xfer(msg)
         GPIO.output(PIN_CS, GPIO.HIGH)
 
@@ -227,7 +227,7 @@ class adc :
 
                 # generate a SYNC to restart conversion
             #GPIO.output(PIN_SYNCN, GPIO.LOW)
-            #print "generating sync", hex(channel)
+            #print ("generating sync", hex(channel))
             #self.cmd(SYNC)
             #self.cmd(WAKEUP)
         if buf_en != self.buf_en :
@@ -243,7 +243,7 @@ class adc :
             # other configuration changes will cause internal SYNC generation
         #GPIO.output(PIN_SYNCN, GPIO.HIGH)
         if need_cal :
-#           #print "calibrating"
+#           #(print "calibrating")
             self.cmd(SELFCAL)
         else :
             self.cmd(WAKEUP)
@@ -263,9 +263,9 @@ class adc :
 
             # convert the 3-byte value to 24-bit
         if reply[0] & 0x80 :
-            (value,) = struct.unpack(">l",'\xFF'+''.join(map(chr,reply)))
+            (value,) = struct.unpack(">l",b'\xFF'+bytes(reply))
         else :
-            (value,) = struct.unpack(">l",'\x00'+''.join(map(chr,reply)))
+            (value,) = struct.unpack(">l",b'\x00'+bytes(reply))
 #       value = 0
 #       for i in reply :
 #           value = value<<8 | int(i)

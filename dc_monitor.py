@@ -37,3 +37,36 @@ def vbus() :
 
 def test() :
     return adc.read_data(ADS1256.PSEL4 | ADS1256.NCOM)
+
+if __name__=='__main__' :
+    import time
+
+    #print measure("dummy")
+    print ("knob battery solar bus")
+    for i in range(10) :
+        print ("%4.2f %5.1f %4.1f %4.0f" % (
+                knob(),
+                ibattery(),
+                isolar(),
+                vbus(),
+                ))
+        time.sleep(1)
+
+    exit()
+
+    first = ibattery()
+    print (first)
+
+    min = 10
+    max = -10
+    avg = 0
+    start = time.time()
+    for i in range(100) :
+        value = ibattery()
+        if value < min :
+            min = value
+        if value > max :
+            max = value
+        avg += value
+
+    print (min, max, avg/100)

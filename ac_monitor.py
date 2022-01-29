@@ -8,7 +8,7 @@ def crc16(data) :
         for i in range(8) :
             if crc&0x0001 : crc ^= 0xA001<<1
             crc >>= 1
-    return [crc&0xFF, crc>>8]
+    return struct.pack('H',crc)
 
 class ac_meter() :
     def __init__(self, device) :
@@ -21,15 +21,16 @@ class ac_meter() :
         self.request[3] = 0x00       #  LSB
         self.request[4] = 0x00       # read 10 registers - MSB
         self.request[5] = 0x0A       #  LSB
-        #print crc16(request)
+        #print (crc16(request))
         self.request[6:8] = crc16(self.request)
 
     def read_meter(self) :
         self.ac_port.write(self.request)
         response = self.ac_port.read(25)
+        self.msg = response
         if len(response)>=5 :
-            if map(ord,response[0:3])==[1,4,20] :
-                if map(ord,response[-2:]) == crc16(map(ord,response)) :
+            if response[0:3]==b'\x01\x04\x14' :
+                if response[-2:] == crc16(response) :
                     self.msg = struct.unpack('>3B11H',response)
 
                     self.voltage   =  self.msg[3] * 0.1 * 2
@@ -41,3 +42,22 @@ class ac_meter() :
 
                     return True
         return False
+if __name__=='__main__' :
+    import glob
+    import serial
+    #import sys
+    #import time
+
+    serialPorts = glob.glob('/dev/ttyUSB*')
+
+    if len(serialPorts)==0 :
+        print ("Unable to find any serial devices")
+        sys.exit()
+    if len(serialPorts)>1 :
+        print ("More than one serial device detected")
+
+    ac_meter = ac_meter(serialPorts[0])
+
+    ac_meter.read_meter()
+
+    print (ac_meter.voltage)
