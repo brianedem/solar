@@ -157,7 +157,7 @@ def filter_power() :
             entry = (points[0][0], points[0][1], points[0][2])
         else :
                 # otherwise we process to fine the min/max/avg
-            entry = (min(points),max(points),int(sum(points)/len(points)))
+            entry = (min(points),max(points),int(sum(points)//len(points)))
 
         powerpoints.append(entry)
         minpoints.append((stop_iso,entry[0]))

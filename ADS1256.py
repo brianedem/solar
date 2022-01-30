@@ -269,4 +269,4 @@ class adc :
 #       value = 0
 #       for i in reply :
 #           value = value<<8 | int(i)
-        return value * 2.0 * vref / 2**23
+        return value * 2.0 * vref // 2**23
