@@ -1,16 +1,16 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 import os
 import time
 import datetime
-import BaseHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
-import thread
+import threading
 
 HOST_NAME = os.uname() [1]
 PORT_NUMBER = 8080
 
-class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class MyHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(s) :
         s.send_response(200)
@@ -38,13 +38,13 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if path.endswith(".ico") :
             mimetype = 'image/png'
             isStatic = True
-        #print isStatic, path
+        #print (isStatic, path)
         if isStatic :
             # print(path)
             try:
                 filename = os.curdir + '/public' + path
-                # print filename
-                f = open(filename)
+                # print (filename)
+                f = open(filename, "rb")
                 s.send_response(200)
                 s.send_header('Content-type', mimetype)
                 s.end_headers()
@@ -57,7 +57,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if path == '/solar.data' :
             fname = "solar.csv"
             fsize = os.stat(fname).st_size
-            dfile = open(fname)
+            dfile = open(fname, "r", encoding="utf-8")
             dfile.seek(fsize-1000)
             data = dfile.readlines()
             fields = data[-1].split(',')
@@ -75,7 +75,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 "discharge_i":  float(fields[8]),
                 "charge_i":     float(fields[7]),
                 })
-            s.wfile.write(json_string)
+            s.wfile.write(bytes(json_string, "utf-8"))
             return
         if path == '/solar.data2' :
             s.send_response(200)
@@ -89,7 +89,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 "avg":      avgpoints,
 #               "history":  powerpoints
                 })
-            s.wfile.write(json_string)
+            s.wfile.write(bytes(json_string, "utf-8"))
             return
 
         s.send_error(404, 'File Not Found: %s' % path)
@@ -101,11 +101,11 @@ avgpoints = []
 power_now = 0
 start_iso = ''
 
-def filter_power(args) :
+def filter_power() :
     global power_now, start_iso
         # open the log file, determine its size
     log_file = "solar.csv"
-    pf = open(log_file, 'r')
+    pf = open(log_file, "r", encoding="utf-8")
     log_size = os.stat(log_file).st_size
 
         # determine the UCI time in ISO format 24 hours ago
@@ -115,10 +115,12 @@ def filter_power(args) :
     start_iso = start.isoformat() + 'Z'   # convert to string for comparison
 
         # position the file to slightly more than 24 hours ago
-    f_offset = 24*60*60*2*(56+6)    # 9000000
-    if log_size < f_offset :
-        f_offset = log_size
-    pf.seek(-f_offset, os.SEEK_END)
+    size_24 = 24*60*60*2*(56+6)    # 9000000
+    if log_size < size_24 :
+        f_offset = 0
+    else :
+        f_offset = log_size - size_24
+    pf.seek(f_offset)
 
         # first line read will most likely not start correctly - discard
     line = pf.readline()
@@ -171,15 +173,13 @@ def filter_power(args) :
             start_iso = start.isoformat() + 'Z'
 
 if __name__ == '__main__':
-    thread.start_new_thread(filter_power,(None,))
-    server_class = BaseHTTPServer.HTTPServer
-    httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
-    print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
+    t = threading.Thread(target=filter_power, daemon=True)
+    t.start()
+    httpd = HTTPServer((HOST_NAME, PORT_NUMBER), MyHandler)
+    print (time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt :
         pass
     httpd.server_close()
-    print time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER)
-#time, voltage, current, power, energy, frequency, pwr_fctr
-#Thu Dec 23 09:49:02 2021,244.200000,0.848000,191.800000,38644.000000,60.000000,0.930000
+    print (time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER))
